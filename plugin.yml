@@ -1,0 +1,40 @@
+name: JumpGame
+main: net.glouser.jumpgameplugin.JumpGamePlugin
+version: 0.1
+commands:
+  jumpAddPlayer:
+    description: Add player(s) to the game.
+    usage: /jumpAddPlayer [<player>]...
+  jumpRmPlayer:
+    description: Remove player(s) from the game.
+    usage: /jumpRmPlayer [<player>]...
+  jumpList:
+    description: List players currently in the game.
+    usage: /jumpList
+  jumpStart:
+    description: Start the game.
+    usage: /jumpStart
+  jumpReset:
+    description: Reset the game.
+    usage: /jumpReset
+  jumpSetJoin:
+    description: Set the join game button.
+    usage: /jumpSetJoin
+  jumpSetStart:
+    description: Set the start game button.
+    usage: /jumpSetStart
+  jumpSetReset:
+    description: Set the game reset button.
+    usage: /jumpSetReset
+  jumpSetJump:
+    description: Set jump platform teleport location.
+    usage: /jumpSetJump
+  jumpSetWait:
+    description: Set waiting area teleport location.
+    usage: /jumpSetWait
+  jumpSetSpawn:
+    description: Set the place where players who die will respawn.
+    usage: /jumpSetSpawn
+  jumpSetPool:
+    description: Set the landing pool.
+    usage: /jumpSetPool

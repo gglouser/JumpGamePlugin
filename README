@@ -1,0 +1,117 @@
+Jump Game Plugin
+================
+
+This plugin runs a simple mini-game. Players jump from a high platform 
+into a shallow pool. After every jump, one block in the pool is replaced 
+with obsidian. The last player alive wins.
+
+Built for Bukkit version 1.6.2-R0.1.
+
+How to Play
+-----------
+
+1. Each person who wants to play pushes the join game button.
+
+2. When everyone is ready, push the start game button. The order in 
+which players will jump is random.
+
+3. The first jumper is teleported to the jump platform. The other 
+players are teleported to the observation/waiting area (if one has been 
+set).
+
+4. The jumper attempts to jump into the water. If they die from fall 
+damage (or any other reason), they are out. If they land in the water 
+and survive, then once they get out of the water, the water block that 
+they landed in is replaced with obsidian.
+
+5. The next jumper is teleported to the jump platform, the last jumper 
+(if they survived) is teleported to the waiting area, and the game 
+continues from step 4.
+
+6. When only two players are left, then when one player dies, the other 
+player must survive one more jump to win the game. Otherwise, both 
+players are still in the game.
+
+Set up
+------
+
+1. Install the jump game plugin jar file to your bukkit server's plugins 
+directory and restart/reload.
+
+2. Build a jump arena with a high platform, a landing pool, and at least 
+two buttons (join and start). Optional: an observation/waiting area; a 
+reset button.
+
+3. Do "/jumpSetJoin" and left-click on the join button.
+
+4. Do "/jumpSetStart" and left-click on the start button.
+
+5. Optional: do "/jumpSetReset" and left-click on the reset button.
+
+6. Stand in the landing pool and do "/jumpSetPool".
+
+7. Stand on the jump platform and do "/jumpSetJump". The position and 
+direction you are facing is recorded, so stand exactly where jumpers 
+should be teleported and face the direction they should face (probably 
+toward the landing pool).
+
+8. Optional: stand in the waiting area and do "/jumpSetWait". As above, 
+position and facing direction are saved.
+
+9. Optional: stand where dead players should respawn and do 
+"/jumpSetSpawn". Any player who dies in the neighborhood of this point 
+will respawn there. As above, position and facing direction are saved.
+  
+Other Configuration Options
+---------------------------
+
+The plugin configuration file (plugins/JumpGame/config.yml) will store 
+the settings described above in "Set up". In addition, the following 
+options can be set there:
+
+- jumpTimeout: time in ticks that the jumper has to jump after being 
+teleported to the jump platform. When time runs out, the jumper is set 
+on fire to force them to either jump in the pool or die and get 
+eliminated.
+
+- exitPoolTimeout: time in ticks that the jump has to get out of the 
+pool after a successful jump. When time runs out, the jumper is 
+teleported out (to the waiting area if one is set) and the next player's 
+turn begins.
+
+- poolSizeLimit: maximum size of the landing pool
+
+- respawnDist: any player who dies within this distance from the 
+(optional) respawn point will respawn there
+
+Command Reference
+-----------------
+
+All commands require op status.
+
+/jumpAddPlayer: Add player(s) to the game. If no player name is given, 
+add self.
+
+/jumpList: List players currently in the game.
+
+/jumpReset: Reset the game. Removes all players and sets all landing 
+pool blocks back to water.
+
+/jumpRmPlayer: Remove player(s) from the game. If no player name is 
+given, remove self.
+
+/jumpSetJoin: Set the join game button.
+
+/jumpSetJump: Set jump platform teleport location.
+
+/jumpSetPool: Set the landing pool.
+
+/jumpSetReset: Set the game reset button.
+
+/jumpSetSpawn: Set the place where players who die will respawn.
+
+/jumpSetStart: Set the start game button.
+
+/jumpSetWait: Set waiting area teleport location.
+
+/jumpStart: Start the game.

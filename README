@@ -74,7 +74,7 @@ teleported to the jump platform. When time runs out, the jumper is set
 on fire to force them to either jump in the pool or die and get 
 eliminated.
 
-- exitPoolTimeout: time in ticks that the jump has to get out of the 
+- exitPoolTimeout: time in ticks that the jumper has to get out of the 
 pool after a successful jump. When time runs out, the jumper is 
 teleported out (to the waiting area if one is set) and the next player's 
 turn begins.

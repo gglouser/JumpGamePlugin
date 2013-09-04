@@ -89,13 +89,13 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         } else if (cmd.getName().equalsIgnoreCase("jumpRmPlayer")) {
             return doRemovePlayer(sender, args);
         } else if (cmd.getName().equalsIgnoreCase("jumpList")) {
-            game.listPlayers(sender);
+            doListPlayers(sender);
             return true;
         } else if (cmd.getName().equalsIgnoreCase("jumpStart")) {
-            game.start(sender);
+            doStart(sender);
             return true;
         } else if (cmd.getName().equalsIgnoreCase("jumpReset")) {
-            game.reset(sender);
+            doReset(sender);
             return true;
         } else if (cmd.getName().equalsIgnoreCase("jumpSetJoin")) {
             configButton(sender, new ConfigSetter<Button>() {
@@ -184,7 +184,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        game.removePlayer(event.getPlayer(), event.getPlayer());
+        game.removePlayer(event.getPlayer());
     }
 
     @EventHandler
@@ -218,12 +218,11 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK
               && event.getClickedBlock().getType() == Material.STONE_BUTTON) {
             if (btnJoin != null && btnJoin.isBlock(event.getClickedBlock())) {
-                Player p = event.getPlayer();
-                game.addPlayer(p);
+                playerJoinGame(event.getPlayer());
             } else if (btnStart != null && btnStart.isBlock(event.getClickedBlock())) {
-                game.start(event.getPlayer());
+                doStart(event.getPlayer());
             } else if (btnReset != null && btnReset.isBlock(event.getClickedBlock())) {
-                game.reset(event.getPlayer());
+                doReset(event.getPlayer());
             }
         } else if (buttonSetter != null && configPlayer == event.getPlayer()
               && event.getAction() == Action.LEFT_CLICK_BLOCK) {
@@ -246,26 +245,60 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
 
     private boolean doAddPlayer(CommandSender sender, String[] args) {
         if (args.length == 0 && sender instanceof Player) {
-            game.addPlayer((Player) sender);
+            playerJoinGame((Player) sender);
             return true;
         } else if (args.length < 1) {
             sender.sendMessage("Player name(s) required");
             return false;
+        } else if (game.gameInProgress()) {
+            sender.sendMessage("Can't add player - game in progress.");
+            return true;
         }
         for (int i = 0; i < args.length; i++) {
             Player target = getServer().getPlayer(args[i]);
             if (target == null) {
                 sender.sendMessage("Player " + args[i] + " is not online");
             } else {
-                game.addPlayer(sender, target);
+                switch (game.addPlayer(target)) {
+                    case SUCCESS:
+                        sender.sendMessage("Added " + target.getName() + " to the jump game");
+                        target.sendMessage("You have been added to the jump game");
+                        break;
+                    case FAILED_ALREADY_PLAYING:
+                        sender.sendMessage("Can't add player - " + target.getName() + " has already joined");
+                        break;
+                }
             }
         }
         return true;
     }
 
+    private void playerJoinGame(Player p) {
+        switch (game.addPlayer(p)) {
+            case SUCCESS:
+                p.sendMessage("You have joined the jump game");
+                break;
+
+            case FAILED_IN_PROGRESS:
+                p.sendMessage("Can't join jump game - game in progress.");
+                break;
+
+            case FAILED_ALREADY_PLAYING:
+                p.sendMessage("You already joined the jump game");
+                break;
+        }
+    }
+
     private boolean doRemovePlayer(CommandSender sender, String[] args) {
         if (args.length == 0 && sender instanceof Player) {
-            game.removePlayer(sender, (Player) sender);
+            switch (game.removePlayer((Player) sender)) {
+                case SUCCESS:
+                    sender.sendMessage("You have left the jump game");
+                    break;
+                case FAILED_NOT_FOUND:
+                    sender.sendMessage("You were not playing the jump game");
+                    break;
+            }
             return true;
         } else if (args.length < 1) {
             sender.sendMessage("Player name(s) required");
@@ -276,10 +309,58 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             if (target == null) {
                 sender.sendMessage("Player " + args[i] + " is not online");
             } else {
-                game.removePlayer(sender, target);
+                switch (game.removePlayer(target)) {
+                    case SUCCESS:
+                        sender.sendMessage("Removed " + target.getName() + " from jump game");
+                        break;
+                    case FAILED_NOT_FOUND:
+                        sender.sendMessage("Player " + target.getName() + " was not playing the jump game.");
+                        break;
+                }
             }
         }
         return true;
+    }
+
+    private void doListPlayers(CommandSender sender) {
+        List<Player> players = game.getPlayers();
+        StringBuilder msg = new StringBuilder("Current jump game players:");
+        for (Player p : players) {
+            msg.append(" ");
+            msg.append(p.getName());
+        }
+        sender.sendMessage(msg.toString());
+    }
+
+    private void doStart(CommandSender sender) {
+        switch (game.start()) {
+            case SUCCESS:
+                break;
+
+            case FAILED_IN_PROGRESS:
+                sender.sendMessage("Game already in progress");
+                break;
+
+            case FAILED_NO_JUMP_TP:
+                sender.sendMessage("Can't start game: jump platform not set");
+                break;
+
+            case FAILED_NO_POOL:
+                sender.sendMessage("Can't start game: no pool");
+                break;
+
+            case FAILED_NO_PLAYERS:
+                sender.sendMessage("Can't start game: no players");
+                break;
+        }
+    }
+
+    private void doReset(CommandSender sender) {
+        // All players in the game get notified. Don't notify twice.
+        if (!(sender instanceof Player && game.isPlaying((Player) sender))) {
+            sender.sendMessage("Jump game has been reset");
+        }
+        game.reset();
     }
 
     private void doSetPool(CommandSender sender) {

@@ -27,12 +27,30 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 public class JumpGame {
+
+    public enum AddResult {
+        SUCCESS,
+        FAILED_IN_PROGRESS,
+        FAILED_ALREADY_PLAYING
+    };
+
+    public enum RemoveResult {
+        SUCCESS,
+        FAILED_NOT_FOUND
+    };
+
+    public enum StartResult {
+        SUCCESS,
+        FAILED_IN_PROGRESS,
+        FAILED_NO_JUMP_TP,
+        FAILED_NO_POOL,
+        FAILED_NO_PLAYERS
+    };
 
     private enum GameState {
         OVER,
@@ -96,80 +114,62 @@ public class JumpGame {
         this.pool = pool;
     }
 
-    public void addPlayer(Player p) {
+    public AddResult addPlayer(Player p) {
         if (gameInProgress()) {
-            p.sendMessage("Can't join jump game - game in progress.");
+            return AddResult.FAILED_IN_PROGRESS;
         } else if (isPlaying(p)) {
-            p.sendMessage("You already joined the jump game");
-        } else {
-            allPlayers.add(p);
-            p.sendMessage("You have joined the jump game");
+            return AddResult.FAILED_ALREADY_PLAYING;
         }
+        allPlayers.add(p);
+        return AddResult.SUCCESS;
     }
 
-    public void addPlayer(CommandSender sender, Player p) {
-        if (gameInProgress()) {
-            sender.sendMessage("Can't add player - game in progress.");
-        } else if (isPlaying(p)) {
-            sender.sendMessage(p.getName() + " is already playing the jump game");
-        } else {
-            allPlayers.add(p);
-            sender.sendMessage(p.getName() + " added to the jump game");
+    public RemoveResult removePlayer(Player p) {
+        if (!isPlaying(p)) {
+            return RemoveResult.FAILED_NOT_FOUND;
         }
-    }
-
-    public void removePlayer(CommandSender sender, Player p) {
-        if (isPlaying(p)) {
-            sender.sendMessage("Removing " + p.getName() + " from jump game.");
-            allPlayers.remove(p);
-            activePlayers.remove(p);
-            if (p == currentJumper) {
-                if (activePlayers.size() > 0) {
-                    cancelTimeout();
-                    nextJumper(GameState.JUMPING);
-                } else {
-                    broadcast("Last active player left game - game over.");
-                    gameOver();
-                }
+        allPlayers.remove(p);
+        activePlayers.remove(p);
+        if (p == currentJumper) {
+            if (activePlayers.size() > 0) {
+                cancelTimeout();
+                nextJumper(GameState.JUMPING);
+            } else {
+                broadcast("Last active player left game - game over.");
+                gameOver();
             }
-        } else {
-            sender.sendMessage("That player is not currently playing the jump game.");
         }
+        return RemoveResult.SUCCESS;
     }
 
-    public void listPlayers(CommandSender sender) {
-        StringBuilder msg = new StringBuilder("Current jump game players:");
-        for (Player p : allPlayers) {
-            msg.append(" ");
-            msg.append(p.getName());
-        }
-        sender.sendMessage(msg.toString());
+    public List<Player> getPlayers() {
+        return allPlayers;
     }
 
-    public void reset(CommandSender sender) {
+    public void reset() {
+        broadcast("Jump game has been reset");
         gameOver();
         resetPool();
         jumpCount = 0;
-        sender.sendMessage("Jump game has been reset.");
     }
 
-    public void start(CommandSender sender) {
+    public StartResult start() {
         if (gameInProgress()) {
-            sender.sendMessage("Game already in progress");
+            return StartResult.FAILED_IN_PROGRESS;
         } else if (jumpTP == null) {
-            sender.sendMessage("Can't start game: jump platform not set");
+            return StartResult.FAILED_NO_JUMP_TP;
         } else if (pool == null || pool.size() == 0) {
-            sender.sendMessage("Can't start game: no pool");
+            return StartResult.FAILED_NO_POOL;
         } else if (allPlayers.size() == 0) {
-            sender.sendMessage("Can't start game: no players");
-        } else {
-            broadcast("Jump game starts now!");
-            jumpCount = 0;
-            resetPool();
-            initActivePlayers();
-            nextJumper(GameState.JUMPING);
-            moveAllWaiters();
+            return StartResult.FAILED_NO_PLAYERS;
         }
+        broadcast("Jump game starts now!");
+        jumpCount = 0;
+        resetPool();
+        initActivePlayers();
+        nextJumper(GameState.JUMPING);
+        moveAllWaiters();
+        return StartResult.SUCCESS;
     }
 
     public void playerDied(Player p) {

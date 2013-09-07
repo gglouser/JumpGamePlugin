@@ -64,6 +64,7 @@ public class JumpGame {
     private GameState gameState;
     private ArrayList<Player> allPlayers;
     private LinkedList<Player> activePlayers;
+    private ArrayList<Player> recentDead;
     private List<Block> pool;
     private Player currentJumper;
     private int jumpCount;
@@ -79,6 +80,7 @@ public class JumpGame {
         rand = new Random();
         allPlayers = new ArrayList<Player>();
         activePlayers = new LinkedList<Player>();
+        recentDead = new ArrayList<Player>();
         gameState = GameState.OVER;
     }
 
@@ -130,9 +132,15 @@ public class JumpGame {
         }
         allPlayers.remove(p);
         activePlayers.remove(p);
+        recentDead.remove(p);
         if (p == currentJumper) {
+            cancelTimeout();
             if (activePlayers.size() > 0) {
-                cancelTimeout();
+                nextJumper(GameState.JUMPING);
+            } else if (recentDead.size() > 0) {
+                broadcast("Last active player left game, but some players died in this round, so they get another chance");
+                activePlayers.addAll(recentDead);
+                recentDead.clear();
                 nextJumper(GameState.JUMPING);
             } else {
                 broadcast("Last active player left game - game over.");
@@ -167,6 +175,7 @@ public class JumpGame {
         jumpCount = 0;
         resetPool();
         initActivePlayers();
+        recentDead.clear();
         nextJumper(GameState.JUMPING);
         moveAllWaiters();
         return StartResult.SUCCESS;
@@ -175,23 +184,23 @@ public class JumpGame {
     public void playerDied(Player p) {
         if (p != currentJumper) return;
         cancelTimeout();
+        recentDead.add(currentJumper);
         if (gameState == GameState.JUMPING) {
             if (activePlayers.size() == 1) {
                 broadcast(activePlayers.get(0).getName() + ": prove your worth!");
-                activePlayers.add(currentJumper);
                 nextJumper(GameState.PROVE_YOUR_WORTH);
             } else if (activePlayers.size() == 0) {
                 // single player game
                 broadcast("Game over! You made " + jumpCount + " successful jumps.");
                 gameOver();
             } else {
-                broadcast(p.getName() + " is out!" +
-                  ((activePlayers.size() == 2) ? " Only two players remain." : ""));
+                broadcast(p.getName() + " is out!");
                 nextJumper(GameState.JUMPING);
             }
         } else if (gameState == GameState.PROVE_YOUR_WORTH) {
-            broadcast(activePlayers.get(0).getName() + " gets another chance. The game continues.");
-            activePlayers.add(currentJumper);
+            broadcast("Everyone in the last round missed, so they all get another chance.");
+            activePlayers.addAll(recentDead);
+            recentDead.clear();
             nextJumper(GameState.JUMPING);
         }
     }
@@ -237,6 +246,7 @@ public class JumpGame {
     private void endTurn() {
         splashdown.getBlock().setType(Material.OBSIDIAN);
         activePlayers.add(currentJumper);
+        recentDead.clear();
         if (poolIsGone()) {
             broadcast("Every spot in the pool has been hit.");
             broadcast("Everybody wins. Congratulations!");
@@ -290,6 +300,7 @@ public class JumpGame {
         cancelTimeout();
         allPlayers.clear();
         activePlayers.clear();
+        recentDead.clear();
     }
 
     private void setJumpTimeout() {

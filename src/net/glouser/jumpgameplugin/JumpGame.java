@@ -135,16 +135,66 @@ public class JumpGame {
         recentDead.remove(p);
         if (p == currentJumper) {
             cancelTimeout();
-            if (activePlayers.size() > 0) {
-                nextJumper(GameState.JUMPING);
-            } else if (recentDead.size() > 0) {
-                broadcast("Last active player left game, but some players died in this round, so they get another chance");
-                activePlayers.addAll(recentDead);
-                recentDead.clear();
-                nextJumper(GameState.JUMPING);
-            } else {
-                broadcast("Last active player left game - game over.");
-                gameOver();
+            switch (gameState) {
+
+                case JUMPING:
+                    if (allPlayers.size() == 0) {
+                        // Game was single player
+                        gameOver();
+                    } else if (allPlayers.size() == 1) {
+                        // Game was two player, now single player
+                        // Remaining player can't have died,
+                        // otherwise, we would be in PROVE_YOUR_WORTH.
+                        // Keep playing, or declare winner?
+                        nextJumper(GameState.JUMPING);
+                    } else if (activePlayers.size() == 1) {
+                        if (recentDead.size() > 0) {
+                            broadcast(activePlayers.get(0).getName() + ": prove your worth!");
+                            nextJumper(GameState.PROVE_YOUR_WORTH);
+                        } else {
+                            // No recent dead, this is the last player standing
+                            broadcast(activePlayers.get(0).getName() + " is the last player standing.");
+                            gameOver();
+                        }
+                    } else {
+                        nextJumper(GameState.JUMPING);
+                    }
+                    break;
+
+                case PROVE_YOUR_WORTH:
+                    if (recentDead.size() == 1) {
+                        broadcast("Worth was not proven. " + recentDead.get(0).getName() + " wins by default");
+                        gameOver();
+                    } else {
+                        activePlayers.addAll(recentDead);
+                        recentDead.clear();
+                        nextJumper(GameState.JUMPING);
+                    }
+                    break;
+
+                case EXIT_POOL:
+                    if (allPlayers.size() == 0) {
+                        // Game was single player
+                        gameOver();
+                    } else if (allPlayers.size() == 1) {
+                        // Game was two player, now single player.
+                        // Remaining player can't have died,
+                        // otherwise, current player would have won.
+                        // Keep playing or declare winner?
+                        endTurn(GameState.JUMPING);
+                    } else if (activePlayers.size() == 1) {
+                        if (recentDead.size() > 0) {
+                            broadcast(activePlayers.get(0).getName() + ": prove your worth!");
+                            endTurn(GameState.PROVE_YOUR_WORTH);
+                        } else {
+                            // No recent dead, this is the last player standing
+                            broadcast(activePlayers.get(0).getName() + " is the last player standing.");
+                            gameOver();
+                        }
+                    } else {
+                        endTurn(GameState.JUMPING);
+                    }
+                    break;
             }
         }
         return RemoveResult.SUCCESS;
@@ -184,50 +234,75 @@ public class JumpGame {
     public void playerDied(Player p) {
         if (p != currentJumper) return;
         cancelTimeout();
-        recentDead.add(currentJumper);
-        if (gameState == GameState.JUMPING) {
-            if (activePlayers.size() == 1) {
-                broadcast(activePlayers.get(0).getName() + ": prove your worth!");
-                nextJumper(GameState.PROVE_YOUR_WORTH);
-            } else if (activePlayers.size() == 0) {
-                // single player game
-                broadcast("Game over! You made " + jumpCount + " successful jumps.");
-                gameOver();
-            } else {
-                broadcast(p.getName() + " is out!");
+        switch (gameState) {
+
+            case JUMPING:
+                recentDead.add(currentJumper);
+                if (allPlayers.size() == 1) {
+                    // Single player game
+                    broadcast("Game over! You made " + jumpCount + " successful jumps.");
+                    gameOver();
+                } else if (activePlayers.size() == 1) {
+                    broadcast(activePlayers.get(0).getName() + ": prove your worth!");
+                    nextJumper(GameState.PROVE_YOUR_WORTH);
+                } else {
+                    nextJumper(GameState.JUMPING);
+                }
+                break;
+
+            case PROVE_YOUR_WORTH:
+                broadcast("Everyone in the last round missed, so they all get another chance.");
+                activePlayers.addAll(recentDead);
+                activePlayers.add(currentJumper);
+                recentDead.clear();
                 nextJumper(GameState.JUMPING);
-            }
-        } else if (gameState == GameState.PROVE_YOUR_WORTH) {
-            broadcast("Everyone in the last round missed, so they all get another chance.");
-            activePlayers.addAll(recentDead);
-            recentDead.clear();
-            nextJumper(GameState.JUMPING);
+                break;
+
+            case EXIT_POOL:
+                activePlayers.add(currentJumper);
+                endTurn(GameState.JUMPING);
+                break;
         }
     }
 
     public void playerMoved(Player p, Location movedTo) {
         if (p != currentJumper) return;
-        if (gameState == GameState.JUMPING && isPoolBlock(movedTo.getBlock())) {
-            broadcast("Splashdown! Good jump by " + p.getName());
-            currentJumper.sendMessage("Please exit the pool.");
-            jumpCount += 1;
-            splashdown = movedTo;
-            cancelTimeout();
-            setExitPoolTimeout();
-            gameState = GameState.EXIT_POOL;
-        } else if (gameState == GameState.PROVE_YOUR_WORTH && isPoolBlock(movedTo.getBlock())) {
-            jumpCount += 1;
-            broadcast(p.getName() + " has proved their worth.");
-            broadcast(p.getName() + " wins!");
-            broadcast("There were " + jumpCount + " successful jumps in all.");
-            gameOver();
-        } else if (gameState == GameState.EXIT_POOL && !isPoolBlock(movedTo.getBlock())) {
-            cancelTimeout();
-            if (allPlayers.size() > 1 && waitTP != null) {
-                // Not single-player. Send last jumper to waiting area.
-                currentJumper.teleport(waitTP);
-            }
-            endTurn();
+        boolean movedToPool = isPoolBlock(movedTo.getBlock());
+        switch (gameState) {
+
+            case JUMPING:
+                if (movedToPool) {
+                    broadcast("Splashdown! Good jump by " + p.getName());
+                    currentJumper.sendMessage("Please exit the pool.");
+                    jumpCount += 1;
+                    splashdown = movedTo;
+                    cancelTimeout();
+                    setExitPoolTimeout();
+                    gameState = GameState.EXIT_POOL;
+                }
+                break;
+
+            case PROVE_YOUR_WORTH:
+                if (movedToPool) {
+                    jumpCount += 1;
+                    broadcast(p.getName() + " has proved their worth.");
+                    broadcast(p.getName() + " wins!");
+                    broadcast("There were " + jumpCount + " successful jumps in all.");
+                    gameOver();
+                }
+                break;
+
+            case EXIT_POOL:
+                if (!movedToPool) {
+                    cancelTimeout();
+                    if (waitTP != null && allPlayers.size() > 1) {
+                        // Not single-player. Send last jumper to waiting area.
+                        currentJumper.teleport(waitTP);
+                    }
+                    activePlayers.add(currentJumper);
+                    endTurn(GameState.JUMPING);
+                }
+                break;
         }
     }
 
@@ -240,19 +315,19 @@ public class JumpGame {
             dest.add(0, 2, 0);
         }
         currentJumper.teleport(dest);
-        endTurn();
+        activePlayers.add(currentJumper);
+        endTurn(GameState.JUMPING);
     }
 
-    private void endTurn() {
+    private void endTurn(GameState nextState) {
         splashdown.getBlock().setType(Material.OBSIDIAN);
-        activePlayers.add(currentJumper);
         recentDead.clear();
         if (poolIsGone()) {
             broadcast("Every spot in the pool has been hit.");
             broadcast("Everybody wins. Congratulations!");
             gameOver();
         } else {
-            nextJumper(GameState.JUMPING);
+            nextJumper(nextState);
         }
     }
 

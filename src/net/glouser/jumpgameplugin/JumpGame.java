@@ -237,7 +237,7 @@ public class JumpGame {
             dest = waitTP;
         } else {
             dest = splashdown.clone();
-            dest.add(0.5, 2, 0.5);
+            dest.add(0, 2, 0);
         }
         currentJumper.teleport(dest);
         endTurn();

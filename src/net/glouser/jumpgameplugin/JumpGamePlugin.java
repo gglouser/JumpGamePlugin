@@ -48,6 +48,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
     }
 
     private JumpGame game;
+    private JumpPool pool;
     private JumpGameConfig config;
     private Button btnJoin;
     private Button btnStart;
@@ -61,7 +62,8 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         getLogger().info("Registering event listeners");
         getServer().getPluginManager().registerEvents(this, this);
-        game = new JumpGame(this);
+        pool = new JumpPool();
+        game = new JumpGame(this, pool);
         config = new JumpGameConfig(this);
         loadConfig();
     }
@@ -368,6 +370,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             sender.sendMessage("Must be set by player");
             return;
         }
+
         Player p = (Player) sender;
         Location l = p.getLocation();
         if (l.getBlock().getType() != Material.STATIONARY_WATER) {
@@ -376,27 +379,12 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         }
 
         int poolSizeLimit = config.getPoolSizeLimit();
-        ArrayList<Block> pool = new ArrayList<Block>();
-        LinkedList<Block> pending = new LinkedList<Block>();
-        pending.add(l.getBlock());
-        while (pending.size() > 0) {
-            Block b = pending.remove();
-            if (!pool.contains(b) && b.getType() == Material.STATIONARY_WATER) {
-                if (pool.size() >= poolSizeLimit) {
-                    sender.sendMessage("Pool size exceeded limit");
-                    getLogger().info("Pool size exceeded limit");
-                    break;
-                }
-                pool.add(b);
-                pending.add(b.getRelative(1, 0, 0));
-                pending.add(b.getRelative(-1, 0, 0));
-                pending.add(b.getRelative(0, 0, 1));
-                pending.add(b.getRelative(0, 0, -1));
-            }
+        pool.buildPool(l.getBlock(), poolSizeLimit);
+        if (pool.size() >= poolSizeLimit) {
+            sender.sendMessage("Pool size exceeded limit");
+            getLogger().info("Pool size exceeded limit");
         }
-
-        game.setPool(pool);
-        config.setPool(pool);
+        config.setPool(pool.getBlocks());
 
         String msg = "Found pool with size " + pool.size();
         sender.sendMessage(msg);
@@ -414,7 +402,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         game.setExitPoolTimeoutTicks(config.getExitPoolTimeout());
         game.setJumpTP(config.getJumpLocation());
         game.setWaitTP(config.getWaitLocation());
-        game.setPool(config.getPool());
+        pool.setBlocks(config.getPool());
     }
 
 }

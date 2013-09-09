@@ -65,7 +65,7 @@ public class JumpGame {
     private ArrayList<Player> allPlayers;
     private LinkedList<Player> activePlayers;
     private ArrayList<Player> recentDead;
-    private List<Block> pool;
+    private JumpPool pool;
     private Player currentJumper;
     private int jumpCount;
     private Location jumpTP;
@@ -75,8 +75,9 @@ public class JumpGame {
     private int exitPoolTimeoutTicks;
     private BukkitTask timeoutTask;
 
-    public JumpGame(Plugin plugin) {
+    public JumpGame(Plugin plugin, JumpPool pool) {
         this.plugin = plugin;
+        this.pool = pool;
         rand = new Random();
         allPlayers = new ArrayList<Player>();
         activePlayers = new LinkedList<Player>();
@@ -110,10 +111,6 @@ public class JumpGame {
 
     public void setExitPoolTimeoutTicks(int ticks) {
         exitPoolTimeoutTicks = ticks;
-    }
-
-    public void setPool(List<Block> pool) {
-        this.pool = pool;
     }
 
     public AddResult addPlayer(Player p) {
@@ -207,7 +204,7 @@ public class JumpGame {
     public void reset() {
         broadcast("Jump game has been reset");
         gameOver();
-        resetPool();
+        pool.reset();
         jumpCount = 0;
     }
 
@@ -223,7 +220,7 @@ public class JumpGame {
         }
         broadcast("Jump game starts now!");
         jumpCount = 0;
-        resetPool();
+        pool.reset();
         initActivePlayers();
         recentDead.clear();
         nextJumper(GameState.JUMPING);
@@ -267,7 +264,7 @@ public class JumpGame {
 
     public void playerMoved(Player p, Location movedTo) {
         if (p != currentJumper) return;
-        boolean movedToPool = isPoolBlock(movedTo.getBlock());
+        boolean movedToPool = pool.isPoolWater(movedTo.getBlock());
         switch (gameState) {
 
             case JUMPING:
@@ -320,29 +317,9 @@ public class JumpGame {
     }
 
     private void endTurn(GameState nextState) {
-        splashdown.getBlock().setType(Material.OBSIDIAN);
+        pool.fillBlock(splashdown.getBlock());
         recentDead.clear();
-        if (poolIsGone()) {
-            broadcast("Every spot in the pool has been hit.");
-            broadcast("Everybody wins. Congratulations!");
-            gameOver();
-        } else {
-            nextJumper(nextState);
-        }
-    }
-
-    private void resetPool() {
-        for (Block b : pool) {
-            b.setType(Material.STATIONARY_WATER);
-        }
-    }
-
-    private boolean isPoolBlock(Block b) {
-        return b.getType() == Material.STATIONARY_WATER && pool.contains(b);
-    }
-
-    private boolean poolIsGone() {
-        return jumpCount == pool.size();
+        nextJumper(nextState);
     }
 
     private void initActivePlayers() {

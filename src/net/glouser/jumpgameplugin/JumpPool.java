@@ -58,6 +58,10 @@ public class JumpPool {
         return b.getType() == Material.STATIONARY_WATER && blocks.contains(b);
     }
 
+    public boolean atFillLimit() {
+        return fillCount >= blocks.size() - 1;
+    }
+
     public void fillBlock(Block b) {
         if (fillCount < blocks.size() - 1) {
             b.setType(FILL_TYPE);

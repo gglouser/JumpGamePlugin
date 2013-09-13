@@ -98,6 +98,11 @@ public class JumpGame {
     }
 
     public TurnTracker.RemoveResult removePlayer(Player p) {
+        // If removing the current player and they have already
+        // jumped into the water, go ahead and fill in the block.
+        if (p == players.getCurrentPlayer() && jumpState == JumpState.EXIT_POOL) {
+            fillSplashdownBlock();
+        }
         TurnTracker.RemoveResult res = players.removePlayer(p);
         update();
         return res;
@@ -199,31 +204,7 @@ public class JumpGame {
 
     private void endTurnSuccess() {
         players.endTurnSuccess();
-
-        Block splashdownBlock = splashdown.getBlock();
-        switch (players.getMode()) {
-            case CONTINUOUS:
-                pool.fillBlock(splashdownBlock);
-
-                // If there is only one water left in the pool,
-                // switch to round format.
-                if (pool.atFillLimit()) {
-                    plugin.getLogger().info("switching to round format");
-                    players.setMode(TurnTracker.Mode.ROUNDS);
-                }
-                break;
-
-            case ROUNDS:
-                if (!splashdownBlocks.contains(splashdownBlock)) {
-                    splashdownBlocks.add(splashdownBlock);
-                }
-                break;
-
-            default:
-                plugin.getLogger().info("Unexpected TurnTracker.Mode: " + players.getMode());
-                break;
-        }
-
+        fillSplashdownBlock();
         update();
     }
 
@@ -268,7 +249,7 @@ public class JumpGame {
 
             case NEW_ROUND:
                 broadcast("New round! Now jumping: " + players.getCurrentPlayer().getName());
-                fillSplashdownBlocks();
+                fillSavedBlocks();
                 nextJumper();
                 break;
 
@@ -302,7 +283,32 @@ public class JumpGame {
         }
     }
 
-    private void fillSplashdownBlocks() {
+    private void fillSplashdownBlock() {
+        Block splashdownBlock = splashdown.getBlock();
+        switch (players.getMode()) {
+            case CONTINUOUS:
+                pool.fillBlock(splashdownBlock);
+
+                // If there is only one water left in the pool,
+                // switch to round format.
+                if (pool.atFillLimit()) {
+                    players.setMode(TurnTracker.Mode.ROUNDS);
+                }
+                break;
+
+            case ROUNDS:
+                if (!splashdownBlocks.contains(splashdownBlock)) {
+                    splashdownBlocks.add(splashdownBlock);
+                }
+                break;
+
+            default:
+                plugin.getLogger().info("Unexpected TurnTracker.Mode: " + players.getMode());
+                break;
+        }
+    }
+
+    private void fillSavedBlocks() {
         for (Block b : splashdownBlocks) {
             pool.fillBlock(b);
         }

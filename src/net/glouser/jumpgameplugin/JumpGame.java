@@ -20,6 +20,7 @@ package net.glouser.jumpgameplugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -41,6 +42,9 @@ public class JumpGame {
         JUMPING,
         EXIT_POOL,
     }
+
+    private static String MSG_PREFIX = ChatColor.DARK_AQUA + "[Jump]"
+                                     + ChatColor.WHITE + " ";
 
     private Plugin plugin;
     private JumpPool pool;
@@ -169,7 +173,7 @@ public class JumpGame {
                         update();
                     } else {
                         broadcast("Splashdown! Good jump by " + p.getName());
-                        p.sendMessage("Please exit the pool.");
+                        p.sendMessage(MSG_PREFIX + "Please exit the pool.");
                         cancelTimeout();
                         setExitPoolTimeout();
                         jumpState = JumpState.EXIT_POOL;
@@ -217,6 +221,7 @@ public class JumpGame {
         switch (players.getState()) {
             case STOPPED:
                 plugin.getLogger().info("Game halted");
+                broadcast("Game halted");
                 gameOver();
                 break;
 
@@ -343,7 +348,7 @@ public class JumpGame {
     private void broadcast(String msg) {
         List<Player> ps = players.getPlayers();
         for (Player p : ps) {
-            p.sendMessage(msg);
+            p.sendMessage(MSG_PREFIX + msg);
         }
     }
 

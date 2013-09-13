@@ -225,13 +225,14 @@ public class JumpGame {
                 nextJumper();
                 break;
 
-            case SP_READY:
-                broadcast("You are cleared to jump");
+            case GAME_POINT:
+                broadcast("To win the game, " + players.getCurrentPlayer().getName() + ", prove your worth!");
                 nextJumper();
                 break;
 
-            case GAME_POINT:
-                broadcast("To win the game, " + players.getCurrentPlayer().getName() + ", prove your worth!");
+            case SECOND_CHANCE:
+                broadcast("All contenders missed, so you get a second chance");
+                broadcast("Starting with: " + players.getCurrentPlayer().getName());
                 nextJumper();
                 break;
 
@@ -242,20 +243,25 @@ public class JumpGame {
                 gameOver();
                 break;
 
+            case SP_READY:
+                broadcast("You are cleared to jump");
+                nextJumper();
+                break;
+
             case SP_GAME_OVER:
                 broadcast("Game over! You made " + jumpCount + " successful jumps.");
                 gameOver();
                 break;
 
             case NEW_ROUND:
-                broadcast("New round! Now jumping: " + players.getCurrentPlayer().getName());
+                broadcast("Round " + players.getRoundNum() + "! Now jumping: " + players.getCurrentPlayer().getName());
                 fillSavedBlocks();
                 nextJumper();
                 break;
 
             case SECOND_CHANCE_ROUND:
-                broadcast("All contenders missed, so you get a second chance");
-                broadcast("Starting with: " + players.getCurrentPlayer().getName());
+                broadcast("All contenders in that round missed, so you get a second chance");
+                broadcast("Round " + players.getRoundNum() + ", starting with: " + players.getCurrentPlayer().getName());
                 nextJumper();
                 break;
         }
@@ -291,7 +297,7 @@ public class JumpGame {
 
                 // If there is only one water left in the pool,
                 // switch to round format.
-                if (pool.atFillLimit()) {
+                if (pool.atFillLimit() && players.getPlayers().size() > 1) {
                     players.setMode(TurnTracker.Mode.ROUNDS);
                 }
                 break;

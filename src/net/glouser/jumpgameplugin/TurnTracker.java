@@ -35,9 +35,10 @@ public class TurnTracker {
     public enum State {
         STOPPED,
         READY,
-        SP_READY,
         GAME_POINT,
+        SECOND_CHANCE,
         WINNER,
+        SP_READY,
         SP_GAME_OVER,
         NEW_ROUND,
         SECOND_CHANCE_ROUND
@@ -63,6 +64,7 @@ public class TurnTracker {
     private ArrayList<Player> prevPlayers;
     private ArrayList<Player> provisionalOut;
     private Player currentPlayer;
+    private int roundNum;
 
     public TurnTracker(Plugin plugin) {
         this.plugin = plugin;
@@ -83,6 +85,7 @@ public class TurnTracker {
         prevPlayers.clear();
         provisionalOut.clear();
         currentPlayer = null;
+        roundNum = 0;
     }
 
     public Mode getMode() {
@@ -95,6 +98,10 @@ public class TurnTracker {
 
     public State getState() {
         return state;
+    }
+
+    public int getRoundNum() {
+        return roundNum;
     }
 
     public boolean isPlaying(Player p) {
@@ -132,7 +139,14 @@ public class TurnTracker {
         prevPlayers.remove(p);
         provisionalOut.remove(p);
         if (p == currentPlayer) {
-            removalNewCurrentPlayer();
+            switch (mode) {
+                case CONTINUOUS:
+                    continuousNextPlayer();
+                    break;
+                case ROUNDS:
+                    roundsNextPlayer();
+                    break;
+            }
         }
         removalStateFixup();
         return RemoveResult.SUCCESS;
@@ -146,6 +160,7 @@ public class TurnTracker {
         }
         currentPlayer = nextPlayers.remove();
         state = (nextPlayers.size() == 0) ? State.SP_READY : State.READY;
+        roundNum = 1;
     }
 
     public void endTurnSuccess() {
@@ -156,24 +171,19 @@ public class TurnTracker {
                 break;
 
             case READY:
+            case SECOND_CHANCE:
             case NEW_ROUND:
             case SECOND_CHANCE_ROUND:
                 switch (mode) {
                     case CONTINUOUS:
                         nextPlayers.add(currentPlayer);
                         provisionalOut.clear();
-                        currentPlayer = nextPlayers.remove();
-                        state = State.READY;
+                        continuousNextPlayer();
                         break;
 
                     case ROUNDS:
                         prevPlayers.add(currentPlayer);
-                        if (nextPlayers.size() == 0) {
-                            finishRound();
-                        } else {
-                            currentPlayer = nextPlayers.remove();
-                            state = State.READY;
-                        }
+                        roundsNextPlayer();
                         break;
                 }
                 break;
@@ -203,28 +213,18 @@ public class TurnTracker {
                 break;
 
             case READY:
+            case SECOND_CHANCE:
             case NEW_ROUND:
             case SECOND_CHANCE_ROUND:
                 switch (mode) {
                     case CONTINUOUS:
                         provisionalOut.add(currentPlayer);
-                        if (nextPlayers.size() == 1) {
-                            currentPlayer = nextPlayers.remove();
-                            state = State.GAME_POINT;
-                        } else {
-                            currentPlayer = nextPlayers.remove();
-                            state = State.READY;
-                        }
+                        continuousNextPlayer();
                         break;
 
                     case ROUNDS:
                         provisionalOut.add(currentPlayer);
-                        if (nextPlayers.size() == 0) {
-                            finishRound();
-                        } else {
-                            currentPlayer = nextPlayers.remove();
-                            state = State.READY;
-                        }
+                        roundsNextPlayer();
                         break;
                 }
                 break;
@@ -234,9 +234,8 @@ public class TurnTracker {
                 break;
 
             case GAME_POINT:
-                nextPlayers.addAll(provisionalOut);
-                provisionalOut.clear();
-                state = State.SECOND_CHANCE_ROUND;
+                provisionalOut.add(currentPlayer);
+                continuousNextPlayer();
                 break;
 
             default:
@@ -245,40 +244,50 @@ public class TurnTracker {
         }
     }
 
-    private void finishRound() {
-        if (prevPlayers.size() == 0) {
+    private void continuousNextPlayer() {
+        if (nextPlayers.size() > 0) {
+            currentPlayer = nextPlayers.remove();
+            state = (nextPlayers.size() == 0) ? State.GAME_POINT : State.READY;
+        } else if (provisionalOut.size() > 0) {
             nextPlayers.addAll(provisionalOut);
             provisionalOut.clear();
             currentPlayer = nextPlayers.remove();
-            state = State.SECOND_CHANCE_ROUND;
-        } else if (prevPlayers.size() == 1) {
-            currentPlayer = prevPlayers.get(0);
-            state = State.WINNER;
+            state = State.SECOND_CHANCE;
         } else {
-            nextPlayers.addAll(prevPlayers);
-            prevPlayers.clear();
-            provisionalOut.clear();
-            currentPlayer = nextPlayers.remove();
-            state = State.NEW_ROUND;
+            // No players left. This should not happen in ordinary
+            // play, but could happen if a player is removed
+            // (leaves game, disconnects, gets kicked, etc.).
+            currentPlayer = null;
+            state = State.STOPPED;
         }
     }
 
-    private void removalNewCurrentPlayer() {
+    private void roundsNextPlayer() {
         if (nextPlayers.size() > 0) {
             currentPlayer = nextPlayers.remove();
             state = State.READY;
-        } else if (prevPlayers.size() > 0) {
+        } else if (prevPlayers.size() == 1) {
+            currentPlayer = prevPlayers.get(0);
+            prevPlayers.clear();
+            provisionalOut.clear();
+            state = State.WINNER;
+        } else if (prevPlayers.size() > 1) {
             nextPlayers.addAll(prevPlayers);
             prevPlayers.clear();
             provisionalOut.clear();
             currentPlayer = nextPlayers.remove();
             state = State.NEW_ROUND;
+            roundNum += 1;
         } else if (provisionalOut.size() > 0) {
             nextPlayers.addAll(provisionalOut);
             provisionalOut.clear();
             currentPlayer = nextPlayers.remove();
             state = State.SECOND_CHANCE_ROUND;
+            roundNum += 1;
         } else {
+            // No players left. This should not happen in ordinary
+            // play, but could happen if a player is removed
+            // (leaves game, disconnects, gets kicked, etc.).
             currentPlayer = null;
             state = State.STOPPED;
         }

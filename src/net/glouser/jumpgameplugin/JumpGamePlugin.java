@@ -175,12 +175,16 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             sender.sendMessage("Must be set by player");
         } else {
             Player p = (Player) sender;
-            Location l = p.getLocation().clone();
-            cs.set(l);
-            String msg = "Set jump game " + cs.label() + " to "
-              + l.getX() + ", " + l.getY() + ", " + l.getZ();
-            sender.sendMessage(msg);
-            getLogger().info(msg);
+            Location l = p.getLocation();
+            if (!config.worldCheck(l.getWorld())) {
+                sender.sendMessage("All jump game elements must be in the same world.");
+            } else {
+                cs.set(l.clone());
+                String msg = "Set jump game " + cs.label() + " to "
+                  + l.getX() + ", " + l.getY() + ", " + l.getZ();
+                sender.sendMessage(msg);
+                getLogger().info(msg);
+            }
         }
     }
 
@@ -230,14 +234,18 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
               && event.getAction() == Action.LEFT_CLICK_BLOCK) {
             Block b = event.getClickedBlock();
             if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
-                Button btn = new Button(b);
-                buttonSetter.set(btn);
-                String msg = "Set " + buttonSetter.label() + " button to "
-                  + b.getX() + "," + b.getY() + "," + b.getZ();
-                getLogger().info(msg);
-                configPlayer.sendMessage(msg);
-                configPlayer = null;
-                buttonSetter = null;
+                if (!config.worldCheck(b.getWorld())) {
+                    event.getPlayer().sendMessage("All jump game elements must be in the same world.");
+                } else {
+                    Button btn = new Button(b);
+                    buttonSetter.set(btn);
+                    String msg = "Set " + buttonSetter.label() + " button to "
+                      + b.getX() + "," + b.getY() + "," + b.getZ();
+                    getLogger().info(msg);
+                    configPlayer.sendMessage(msg);
+                    configPlayer = null;
+                    buttonSetter = null;
+                }
             } else {
                 configPlayer.sendMessage("You must left-click a button to set "
                   + buttonSetter.label() + " button");
@@ -375,6 +383,11 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         Location l = p.getLocation();
         if (l.getBlock().getType() != Material.STATIONARY_WATER) {
             sender.sendMessage("Must be standing in water to set pool");
+            return;
+        }
+
+        if (!config.worldCheck(l.getWorld())) {
+            sender.sendMessage("All jump game elements must be in the same world.");
             return;
         }
 

@@ -61,6 +61,11 @@ public class JumpGameConfig {
         this.plugin = plugin;
     }
 
+    public boolean worldCheck(World w) {
+        String worldName = getConfig().getString(KEY_WORLD);
+        return worldName == null || worldName.equals(w.getName());
+    }
+
     public int getJumpTimeout() {
         return getConfig().getInt(KEY_JUMP_TIMEOUT, DEFAULT_JUMP_TIMEOUT);
     }
@@ -162,7 +167,9 @@ public class JumpGameConfig {
         FileConfiguration config = getConfig();
         config.set(KEY_POOL_XZ, join(coords, ","));
         config.set(KEY_POOL_Y, pool.get(0).getY());
-        config.set(KEY_WORLD, pool.get(0).getWorld().getName());
+        if (!config.isSet(KEY_WORLD)) {
+            config.set(KEY_WORLD, pool.get(0).getWorld().getName());
+        }
         saveConfig();
     }
 
@@ -184,6 +191,9 @@ public class JumpGameConfig {
 
     private void setLocation(String key, Location l) {
         FileConfiguration config = getConfig();
+        if (!config.isSet(KEY_WORLD)) {
+            config.set(KEY_WORLD, l.getWorld().getName());
+        }
         ConfigurationSection cs = config.getConfigurationSection(key);
         if (cs == null) {
             cs = config.createSection(key);
@@ -210,6 +220,9 @@ public class JumpGameConfig {
 
     private void setButton(String key, Button b) {
         FileConfiguration config = getConfig();
+        if (!config.isSet(KEY_WORLD)) {
+            config.set(KEY_WORLD, b.getWorldName());
+        }
         ConfigurationSection cs = config.getConfigurationSection(key);
         if (cs == null) {
             cs = config.createSection(key);

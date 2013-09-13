@@ -46,6 +46,7 @@ public class Button {
           && worldName.equals(b.getWorld().getName());
     }
 
+    public String getWorldName() { return worldName; }
     public int getX() { return x; }
     public int getY() { return y; }
     public int getZ() { return z; }

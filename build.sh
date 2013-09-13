@@ -2,7 +2,7 @@
 
 set -e
 
-BUKKIT=bukkit-1.6.2-R0.1.jar
+BUKKIT=bukkit-1.6.2-R1.0.jar
 BUILD=build
 
 if [ ! -d $BUILD ]; then

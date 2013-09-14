@@ -1,11 +1,11 @@
 Jump Game Plugin
 ================
 
+Version 0.2 for Bukkit 1.6.2-R1.0
+
 This plugin runs a simple mini-game. Players jump from a high platform 
 into a shallow pool. After every jump, one block in the pool is replaced 
 with obsidian. The last player alive wins.
-
-Built for Bukkit version 1.6.2-R0.1.
 
 How to Play
 -----------
@@ -28,9 +28,9 @@ they landed in is replaced with obsidian.
 (if they survived) is teleported to the waiting area, and the game 
 continues from step 4.
 
-6. When only two players are left, then when one player dies, the other 
-player must survive one more jump to win the game. Otherwise, both 
-players are still in the game.
+6. In order to win, the last player alive must survive a final jump.
+If the last player misses the final jump, then every player who died
+since the last successful jump gets another chance.
 
 Set up
 ------
@@ -61,7 +61,7 @@ position and facing direction are saved.
 9. Optional: stand where dead players should respawn and do 
 "/jumpSetSpawn". Any player who dies in the neighborhood of this point 
 will respawn there. As above, position and facing direction are saved.
-  
+
 Other Configuration Options
 ---------------------------
 
@@ -115,3 +115,19 @@ given, remove self.
 /jumpSetWait: Set waiting area teleport location.
 
 /jumpStart: Start the game.
+
+
+Change log
+----------
+
+0.2:
+- Give all players who died since the last good jump a second chance
+  instead of just the last two players.
+- Always leave the last block of water in the pool as water rather than
+  changing it to obsidian and ending the game.
+- Added "hard" jump timeout in case the "soft" timeout is ineffective.
+- Improved handling of removing players from game in progress.
+- Improved in-game messages.
+- Added checks to set-up commands to ensure all game elements are in
+  the same world.
+- Updated to Bukkit 1.6.2-R1.0.

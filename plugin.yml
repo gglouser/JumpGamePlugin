@@ -1,6 +1,6 @@
 name: JumpGame
 main: net.glouser.jumpgameplugin.JumpGamePlugin
-version: 0.1
+version: 0.2
 commands:
   jumpAddPlayer:
     description: Add player(s) to the game.

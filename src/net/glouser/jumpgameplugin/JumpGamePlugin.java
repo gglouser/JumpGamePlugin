@@ -30,6 +30,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -200,9 +201,11 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        if (respawnLocation != null) {
+        if (game.isCurrentPlayer(event.getPlayer())) {
+            event.setRespawnLocation(config.getJumpLocation());
+        } else if (respawnLocation != null) {
             Location pl = event.getPlayer().getLocation();
             double dist = Math.max(Math.abs(pl.getX() - respawnLocation.getX()),
                                    Math.abs(pl.getZ() - respawnLocation.getZ()));

@@ -26,6 +26,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class JumpGame {
 
@@ -43,8 +44,8 @@ public class JumpGame {
         EXIT_POOL,
     }
 
-    private static String MSG_PREFIX = ChatColor.DARK_AQUA + "[Jump]"
-                                     + ChatColor.WHITE + " ";
+    private static String MSG_PREFIX = "[" + ChatColor.DARK_AQUA + "Jump"
+                                     + ChatColor.WHITE + "] ";
 
     private Plugin plugin;
     private JumpPool pool;
@@ -79,6 +80,10 @@ public class JumpGame {
 
     public boolean isPlaying(Player p) {
         return players.isPlaying(p);
+    }
+
+    public boolean isCurrentPlayer(Player p) {
+        return p == players.getCurrentPlayer();
     }
 
     public void setJumpTP(Location loc) {
@@ -326,14 +331,53 @@ public class JumpGame {
         splashdownBlocks.clear();
     }
 
+    /* Set the "soft" jump timeout.
+     * The soft timeout sets the player on fire so that they need
+     * to jump into the water or die. This should deal with players
+     * who are taking too long or who go AFK in the middle of the game.
+     * If this takes a player out, they get a second chance as if
+     * they had missed a jump.
+     */
     private void setJumpTimeout() {
-        JumpTimeout j = new JumpTimeout(players.getCurrentPlayer());
-        timeoutTask = j.runTaskLater(plugin, jumpTimeoutTicks);
+        BukkitRunnable br = new BukkitRunnable() {
+            public void run() {
+                Player jumper = players.getCurrentPlayer();
+                jumper.sendMessage(MSG_PREFIX + "Jump into the water, quick!");
+                jumper.setFireTicks(1000);
+                setHardJumpTimeout();
+            }
+        };
+        timeoutTask = br.runTaskLater(plugin, jumpTimeoutTicks);
+    }
+
+    /* Set the "hard" jump timeout.
+     * The hard timeout removes the player from the game if they
+     * haven't jumped. The soft timeout could fail to the player
+     * not dying from the fire for some reason (creative mode, getting
+     * in some non-pool water, easy difficulty setting, rain, etc.).
+     * In this case, the player is completely removed from the game.
+     */
+    private void setHardJumpTimeout() {
+        BukkitRunnable br = new BukkitRunnable() {
+            public void run() {
+                Player p = players.getCurrentPlayer();
+                broadcast(p.getName() + " took too long to jump and is eliminated");
+                removePlayer(p);
+                if (waitTP != null) {
+                    p.teleport(waitTP);
+                }
+            }
+        };
+        timeoutTask = br.runTaskLater(plugin, jumpTimeoutTicks);
     }
 
     private void setExitPoolTimeout() {
-        ExitPoolTimeout ep = new ExitPoolTimeout(this);
-        timeoutTask = ep.runTaskLater(plugin, exitPoolTimeoutTicks);
+        BukkitRunnable br = new BukkitRunnable() {
+            public void run() {
+                forceEndTurn();
+            }
+        };
+        timeoutTask = br.runTaskLater(plugin, exitPoolTimeoutTicks);
     }
 
     private void cancelTimeout() {
@@ -344,7 +388,7 @@ public class JumpGame {
     }
 
     /* Send a message to all players.
-    */
+     */
     private void broadcast(String msg) {
         List<Player> ps = players.getPlayers();
         for (Player p : ps) {

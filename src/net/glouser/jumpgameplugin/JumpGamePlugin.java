@@ -306,6 +306,8 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         if (args.length == 0 && sender instanceof Player) {
             switch (game.removePlayer((Player) sender)) {
                 case SUCCESS:
+                case SUCCESS_NEW_CURRENT_PLAYER:
+                case SUCCESS_NEW_STATE:
                     sender.sendMessage("You have left the jump game");
                     break;
                 case FAILED_NOT_FOUND:
@@ -324,6 +326,8 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             } else {
                 switch (game.removePlayer(target)) {
                     case SUCCESS:
+                    case SUCCESS_NEW_CURRENT_PLAYER:
+                    case SUCCESS_NEW_STATE:
                         sender.sendMessage("Removed " + target.getName() + " from jump game");
                         break;
                     case FAILED_NOT_FOUND:

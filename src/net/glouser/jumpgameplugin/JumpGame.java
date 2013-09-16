@@ -107,13 +107,40 @@ public class JumpGame {
     }
 
     public TurnTracker.RemoveResult removePlayer(Player p) {
-        // If removing the current player and they have already
-        // jumped into the water, go ahead and fill in the block.
-        if (p == players.getCurrentPlayer() && jumpState == JumpState.EXIT_POOL) {
-            fillSplashdownBlock();
+        broadcast("Removed " + p.getName() + " from the jump game");
+
+        if (p == players.getCurrentPlayer()) {
+            plugin.getLogger().info("removing current player");
+            cancelTimeout();
+
+            // If removing the current player and they have already
+            // jumped into the water, go ahead and fill in the block.
+            if (jumpState == JumpState.EXIT_POOL) {
+                fillSplashdownBlock();
+            }
         }
+
         TurnTracker.RemoveResult res = players.removePlayer(p);
-        update();
+        switch (res) {
+            case SUCCESS_NEW_CURRENT_PLAYER:
+                update();
+                break;
+            case SUCCESS_NEW_STATE:
+                switch (players.getState()) {
+                    case WINNER:
+                        broadcast("As the last player remaining in the game, "
+                            + players.getCurrentPlayer().getName()
+                            + " wins by default");
+                        gameOver();
+                        break;
+                    case GAME_POINT:
+                        broadcast("You are the last contender, "
+                            + players.getCurrentPlayer().getName()
+                            + "; if you can prove your worth, you win.");
+                        break;
+                }
+                break;
+        }
         return res;
     }
 

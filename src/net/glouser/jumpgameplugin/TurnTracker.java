@@ -52,6 +52,8 @@ public class TurnTracker {
 
     public enum RemoveResult {
         SUCCESS,
+        SUCCESS_NEW_CURRENT_PLAYER,
+        SUCCESS_NEW_STATE,
         FAILED_NOT_FOUND
     }
 
@@ -135,9 +137,8 @@ public class TurnTracker {
             return RemoveResult.FAILED_NOT_FOUND;
         }
         allPlayers.remove(p);
-        nextPlayers.remove(p);
-        prevPlayers.remove(p);
-        provisionalOut.remove(p);
+
+        RemoveResult result = RemoveResult.SUCCESS;
         if (p == currentPlayer) {
             switch (mode) {
                 case CONTINUOUS:
@@ -147,9 +148,16 @@ public class TurnTracker {
                     roundsNextPlayer();
                     break;
             }
+            result = RemoveResult.SUCCESS_NEW_CURRENT_PLAYER;
+        } else {
+            nextPlayers.remove(p);
+            prevPlayers.remove(p);
+            provisionalOut.remove(p);
+            if (removalStateFixup()) {
+                result = RemoveResult.SUCCESS_NEW_STATE;
+            }
         }
-        removalStateFixup();
-        return RemoveResult.SUCCESS;
+        return result;
     }
 
     public void start() {
@@ -247,12 +255,24 @@ public class TurnTracker {
     private void continuousNextPlayer() {
         if (nextPlayers.size() > 0) {
             currentPlayer = nextPlayers.remove();
-            state = (nextPlayers.size() == 0) ? State.GAME_POINT : State.READY;
+            if (nextPlayers.size() == 0) {
+                if (provisionalOut.size() == 0) {
+                    state = State.WINNER;
+                } else {
+                    state = State.GAME_POINT;
+                }
+            } else {
+                state = State.READY;
+            }
         } else if (provisionalOut.size() > 0) {
             nextPlayers.addAll(provisionalOut);
             provisionalOut.clear();
             currentPlayer = nextPlayers.remove();
-            state = State.SECOND_CHANCE;
+            if (nextPlayers.size() == 0) {
+                state = State.WINNER;
+            } else {
+                state = State.SECOND_CHANCE;
+            }
         } else {
             // No players left. This should not happen in ordinary
             // play, but could happen if a player is removed
@@ -266,23 +286,29 @@ public class TurnTracker {
         if (nextPlayers.size() > 0) {
             currentPlayer = nextPlayers.remove();
             state = State.READY;
-        } else if (prevPlayers.size() == 1) {
-            currentPlayer = prevPlayers.get(0);
-            prevPlayers.clear();
-            provisionalOut.clear();
-            state = State.WINNER;
-        } else if (prevPlayers.size() > 1) {
-            nextPlayers.addAll(prevPlayers);
-            prevPlayers.clear();
-            provisionalOut.clear();
-            currentPlayer = nextPlayers.remove();
-            state = State.NEW_ROUND;
-            roundNum += 1;
+        } else if (prevPlayers.size() > 0) {
+            if (prevPlayers.size() == 1) {
+                currentPlayer = prevPlayers.get(0);
+                prevPlayers.clear();
+                provisionalOut.clear();
+                state = State.WINNER;
+            } else {
+                nextPlayers.addAll(prevPlayers);
+                prevPlayers.clear();
+                provisionalOut.clear();
+                currentPlayer = nextPlayers.remove();
+                state = State.NEW_ROUND;
+                roundNum += 1;
+            }
         } else if (provisionalOut.size() > 0) {
             nextPlayers.addAll(provisionalOut);
             provisionalOut.clear();
             currentPlayer = nextPlayers.remove();
-            state = State.SECOND_CHANCE_ROUND;
+            if (nextPlayers.size() == 0) {
+                state = State.WINNER;
+            } else {
+                state = State.SECOND_CHANCE_ROUND;
+            }
             roundNum += 1;
         } else {
             // No players left. This should not happen in ordinary
@@ -293,34 +319,27 @@ public class TurnTracker {
         }
     }
 
-    private void removalStateFixup() {
-        if (allPlayers.size() == 0) {
-            currentPlayer = null;
-            state = State.STOPPED;
-        } else if (allPlayers.size() == 1) {
-            // Game was two player, now single player
-            // Remaining player can't have died,
-            // otherwise, game would have ended.
-            // Keep playing, or declare winner?
-            state = State.WINNER;
-        } else {
-            switch (mode) {
-                case CONTINUOUS:
-                    if (nextPlayers.size() == 0) {
-                        if (provisionalOut.size() == 0) {
-                            state = State.WINNER;
-                        } else {
-                            state = State.GAME_POINT;
-                        }
-                    }
-                    break;
-                case ROUNDS:
-                    if (nextPlayers.size() + prevPlayers.size() + provisionalOut.size() == 0) {
+    private boolean removalStateFixup() {
+        boolean changed = false;
+        switch (mode) {
+            case CONTINUOUS:
+                if (nextPlayers.size() == 0) {
+                    if (provisionalOut.size() == 0) {
                         state = State.WINNER;
+                    } else {
+                        state = State.GAME_POINT;
                     }
-                    break;
-            }
+                    changed = true;
+                }
+                break;
+            case ROUNDS:
+                if (nextPlayers.size() + prevPlayers.size() + provisionalOut.size() == 0) {
+                    state = State.WINNER;
+                    changed = true;
+                }
+                break;
         }
+        return changed;
     }
 
 }

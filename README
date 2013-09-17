@@ -1,7 +1,7 @@
 Jump Game Plugin
 ================
 
-Version 0.2 for Bukkit 1.6.2-R1.0
+Version 0.2.1 for Bukkit 1.6.2-R1.0
 
 This plugin runs a simple mini-game. Players jump from a high platform 
 into a shallow pool. After every jump, one block in the pool is replaced 
@@ -48,7 +48,10 @@ reset button.
 
 5. Optional: do "/jumpSetReset" and left-click on the reset button.
 
-6. Stand in the landing pool and do "/jumpSetPool".
+6. Stand in the landing pool and do "/jumpSetPool". NOTE: this remembers 
+the blocks that make up the pool at the time you give the command. If 
+you change the pool (add or remove), you should do /jumpSetPool again to 
+record the new pool configuration.
 
 7. Stand on the jump platform and do "/jumpSetJump". The position and 
 direction you are facing is recorded, so stand exactly where jumpers 
@@ -73,6 +76,10 @@ options can be set there:
 teleported to the jump platform. When time runs out, the jumper is set 
 on fire to force them to either jump in the pool or die and get 
 eliminated.
+
+- jumpHardTimeout: time in ticks that the jumper has to jump after
+the first timeout. When this timeout expires, the jumper is removed
+from the game immediately, no second chances.
 
 - exitPoolTimeout: time in ticks that the jumper has to get out of the 
 pool after a successful jump. When time runs out, the jumper is 
@@ -119,6 +126,12 @@ given, remove self.
 
 Change log
 ----------
+
+0.2.1:
+- Fixed problem with timeouts on players who disconnect.
+- Fixed the jumper getting teleported to the jump spot again if another
+  player disconnects.
+- Added separate config value for the hard jump timeout.
 
 0.2:
 - Give all players who died since the last good jump a second chance

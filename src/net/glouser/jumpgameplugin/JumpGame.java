@@ -59,6 +59,7 @@ public class JumpGame {
     private Location jumpTP;
     private Location waitTP;
     private int jumpTimeoutTicks;
+    private int jumpHardTimeoutTicks;
     private int exitPoolTimeoutTicks;
     private BukkitTask timeoutTask;
 
@@ -96,6 +97,10 @@ public class JumpGame {
 
     public void setJumpTimeoutTicks(int ticks) {
         jumpTimeoutTicks = ticks;
+    }
+
+    public void setJumpHardTimeoutTicks(int ticks) {
+        jumpHardTimeoutTicks = ticks;
     }
 
     public void setExitPoolTimeoutTicks(int ticks) {
@@ -395,7 +400,7 @@ public class JumpGame {
                 }
             }
         };
-        timeoutTask = br.runTaskLater(plugin, jumpTimeoutTicks);
+        timeoutTask = br.runTaskLater(plugin, jumpHardTimeoutTicks);
     }
 
     private void setExitPoolTimeout() {

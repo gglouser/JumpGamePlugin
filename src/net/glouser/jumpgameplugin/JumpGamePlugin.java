@@ -419,6 +419,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         btnStart = config.getStartButton();
         btnReset = config.getResetButton();
         game.setJumpTimeoutTicks(config.getJumpTimeout());
+        game.setJumpHardTimeoutTicks(config.getJumpHardTimeout());
         game.setExitPoolTimeoutTicks(config.getExitPoolTimeout());
         game.setJumpTP(config.getJumpLocation());
         game.setWaitTP(config.getWaitLocation());

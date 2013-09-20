@@ -274,8 +274,6 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             } else {
                 switch (game.addPlayer(target)) {
                     case SUCCESS:
-                        sender.sendMessage("Added " + target.getName() + " to the jump game");
-                        target.sendMessage("You have been added to the jump game");
                         break;
                     case FAILED_ALREADY_PLAYING:
                         sender.sendMessage("Can't add player - " + target.getName() + " has already joined");
@@ -289,11 +287,10 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
     private void playerJoinGame(Player p) {
         switch (game.addPlayer(p)) {
             case SUCCESS:
-                p.sendMessage("You have joined the jump game");
                 break;
 
             case FAILED_IN_PROGRESS:
-                p.sendMessage("Can't join jump game - game in progress.");
+                p.sendMessage("Can't join - game in progress.");
                 break;
 
             case FAILED_ALREADY_PLAYING:
@@ -308,7 +305,6 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
                 case SUCCESS:
                 case SUCCESS_NEW_CURRENT_PLAYER:
                 case SUCCESS_NEW_STATE:
-                    sender.sendMessage("You have left the jump game");
                     break;
                 case FAILED_NOT_FOUND:
                     sender.sendMessage("You were not playing the jump game");
@@ -328,7 +324,6 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
                     case SUCCESS:
                     case SUCCESS_NEW_CURRENT_PLAYER:
                     case SUCCESS_NEW_STATE:
-                        sender.sendMessage("Removed " + target.getName() + " from jump game");
                         break;
                     case FAILED_NOT_FOUND:
                         sender.sendMessage("Player " + target.getName() + " was not playing the jump game.");

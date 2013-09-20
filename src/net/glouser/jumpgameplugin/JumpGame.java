@@ -44,8 +44,11 @@ public class JumpGame {
         EXIT_POOL,
     }
 
-    private static String MSG_PREFIX = "[" + ChatColor.DARK_AQUA + "Jump"
-                                     + ChatColor.WHITE + "] ";
+    private static ChatColor C_PLAIN = ChatColor.WHITE;
+    private static ChatColor C_PLAYER = ChatColor.AQUA;
+    private static ChatColor C_NUMBER = ChatColor.RED;
+    private static String MSG_PREFIX = C_PLAIN + "["
+        + ChatColor.DARK_AQUA + "Jump" + C_PLAIN + "] ";
 
     private Plugin plugin;
     private JumpPool pool;
@@ -108,14 +111,16 @@ public class JumpGame {
     }
 
     public TurnTracker.AddResult addPlayer(Player p) {
-        return players.addPlayer(p);
+        TurnTracker.AddResult res = players.addPlayer(p);
+        if (res == TurnTracker.AddResult.SUCCESS) {
+            plugin.getLogger().info("Added " + p.getName());
+            broadcast(C_PLAYER + p.getName() + C_PLAIN + " joined the jump game");
+        }
+        return res;
     }
 
     public TurnTracker.RemoveResult removePlayer(Player p) {
-        broadcast("Removed " + p.getName() + " from the jump game");
-
         if (p == players.getCurrentPlayer()) {
-            plugin.getLogger().info("removing current player");
             cancelTimeout();
 
             // If removing the current player and they have already
@@ -126,6 +131,11 @@ public class JumpGame {
         }
 
         TurnTracker.RemoveResult res = players.removePlayer(p);
+        if (TurnTracker.RM_SUCCESS.contains(res)) {
+            plugin.getLogger().info("Removed " + p.getName());
+            broadcast("Removed " + C_PLAYER + p.getName() + C_PLAIN + " from the jump game");
+            p.sendMessage(MSG_PREFIX + "You were removed from the jump game");
+        }
         switch (res) {
             case SUCCESS_NEW_CURRENT_PLAYER:
                 update();
@@ -134,14 +144,13 @@ public class JumpGame {
                 switch (players.getState()) {
                     case WINNER:
                         broadcast("As the last player remaining in the game, "
-                            + players.getCurrentPlayer().getName()
-                            + " wins by default");
+                            + C_PLAYER + players.getCurrentPlayer().getName()
+                            + C_PLAIN + " wins by default");
                         gameOver();
                         break;
                     case GAME_POINT:
-                        broadcast("You are the last contender, "
-                            + players.getCurrentPlayer().getName()
-                            + "; if you can prove your worth, you win.");
+                        broadcast(C_PLAYER + players.getCurrentPlayer().getName()
+                            + C_PLAIN + " is the last contender; if you can prove your worth, you win.");
                         break;
                 }
                 break;
@@ -154,7 +163,8 @@ public class JumpGame {
     }
 
     public void reset() {
-        broadcast("Jump game has been reset");
+        plugin.getLogger().info("Resetting");
+        broadcast("The jump game has been reset");
         gameOver();
         pool.reset();
     }
@@ -169,13 +179,13 @@ public class JumpGame {
         } else if (players.getPlayers().size() == 0) {
             return StartResult.FAILED_NO_PLAYERS;
         }
-        broadcast("Jump game starts now!");
+        plugin.getLogger().info("Starting game");
         jumpCount = 0;
         pool.reset();
         splashdownBlocks.clear();
         players.setMode(TurnTracker.Mode.CONTINUOUS);
         players.start();
-        broadcast("First up: " + players.getCurrentPlayer().getName());
+        startMsg();
         nextJumper();
         moveAllWaiters();
         return StartResult.SUCCESS;
@@ -209,7 +219,8 @@ public class JumpGame {
                         players.endTurnSuccess();
                         update();
                     } else {
-                        broadcast("Splashdown! Good jump by " + p.getName());
+                        broadcast("Splashdown! Good jump by "
+                            + C_PLAYER + p.getName());
                         p.sendMessage(MSG_PREFIX + "Please exit the pool.");
                         cancelTimeout();
                         setExitPoolTimeout();
@@ -263,25 +274,33 @@ public class JumpGame {
                 break;
 
             case READY:
-                broadcast("Now jumping: " + players.getCurrentPlayer().getName());
+                broadcast("" + C_NUMBER + players.numActivePlayers()
+                    + C_PLAIN + " contenders remain. Now jumping: "
+                    + C_PLAYER + players.getCurrentPlayer().getName());
                 nextJumper();
                 break;
 
             case GAME_POINT:
-                broadcast("To win the game, " + players.getCurrentPlayer().getName() + ", prove your worth!");
+                broadcast("To win the game, "
+                    + C_PLAYER + players.getCurrentPlayer().getName()
+                    + C_PLAIN + ", prove your worth!");
                 nextJumper();
                 break;
 
             case SECOND_CHANCE:
-                broadcast("All contenders missed, so you get a second chance");
-                broadcast("Starting with: " + players.getCurrentPlayer().getName());
+                broadcast("All contenders missed. The last "
+                    + C_NUMBER + players.numActivePlayers()
+                    + C_PLAIN + " get another chance, starting with "
+                    + C_PLAYER + players.getCurrentPlayer().getName());
                 nextJumper();
                 break;
 
             case WINNER:
-                broadcast(players.getCurrentPlayer().getName() + " has proved their worth.");
-                broadcast(players.getCurrentPlayer().getName() + " wins!");
-                broadcast("There were " + jumpCount + " successful jumps in all.");
+                broadcast(C_PLAYER + players.getCurrentPlayer().getName()
+                    + C_PLAIN + " wins!");
+                broadcast("There were "
+                    + C_NUMBER + jumpCount
+                    + C_PLAIN + " successful jumps in all.");
                 gameOver();
                 break;
 
@@ -291,20 +310,35 @@ public class JumpGame {
                 break;
 
             case SP_GAME_OVER:
-                broadcast("Game over! You made " + jumpCount + " successful jumps.");
+                broadcast("Game over! You made " + C_NUMBER + jumpCount
+                    + C_PLAIN + " successful jumps.");
                 gameOver();
                 break;
 
             case NEW_ROUND:
-                broadcast("Round " + players.getRoundNum() + "! Now jumping: " + players.getCurrentPlayer().getName());
+                broadcast("Round " + C_NUMBER + players.getRoundNum()
+                    + C_PLAIN + ", "
+                    + C_NUMBER + players.numActivePlayers()
+                    + C_PLAIN + "contenders remain.! Now jumping: "
+                    + C_PLAYER + players.getCurrentPlayer().getName());
                 fillSavedBlocks();
                 nextJumper();
                 break;
 
             case SECOND_CHANCE_ROUND:
-                broadcast("All contenders in that round missed, so you get a second chance");
-                broadcast("Round " + players.getRoundNum() + ", starting with: " + players.getCurrentPlayer().getName());
+                broadcast("All contenders in round"
+                    + C_NUMBER + (players.getRoundNum() - 1)
+                    + C_PLAIN + " missed, so all"
+                    + C_NUMBER + players.numActivePlayers()
+                    + C_PLAIN + "get another chance.");
+                broadcast("Round " + C_NUMBER + players.getRoundNum()
+                    + C_PLAIN + ", starting with: "
+                    + C_PLAYER + players.getCurrentPlayer().getName());
                 nextJumper();
+                break;
+
+            default:
+                plugin.getLogger().info("Unexpected TurnTracker.State: " + players.getState());
                 break;
         }
     }
@@ -316,6 +350,7 @@ public class JumpGame {
     }
 
     private void gameOver() {
+        plugin.getLogger().info("Game over");
         jumpState = JumpState.NO_GAME;
         players.reset();
         cancelTimeout();
@@ -340,6 +375,7 @@ public class JumpGame {
                 // If there is only one water left in the pool,
                 // switch to round format.
                 if (pool.atFillLimit() && players.getPlayers().size() > 1) {
+                    broadcast("Only one water block is left. Play will now proceed in rounds.");
                     players.setMode(TurnTracker.Mode.ROUNDS);
                 }
                 break;
@@ -393,7 +429,8 @@ public class JumpGame {
         BukkitRunnable br = new BukkitRunnable() {
             public void run() {
                 Player p = players.getCurrentPlayer();
-                broadcast(p.getName() + " took too long to jump and is eliminated");
+                broadcast(C_PLAYER + p.getName()
+                    + C_PLAIN + " took too long to jump and is eliminated");
                 removePlayer(p);
                 if (waitTP != null) {
                     p.teleport(waitTP);
@@ -417,6 +454,32 @@ public class JumpGame {
             timeoutTask.cancel();
             timeoutTask = null;
         }
+    }
+
+    private void startMsg() {
+        StringBuilder msg = new StringBuilder();
+        msg.append("The jump game starts now. ");
+        List<Player> ps = players.getPlayers();
+        int numPlayers = ps.size();
+        if (numPlayers == 1) {
+            msg.append("Good luck!");
+        } else if (numPlayers == 2) {
+            msg.append(C_PLAYER);
+            msg.append(ps.get(0).getName());
+            msg.append(C_PLAIN);
+            msg.append(" versus ");
+            msg.append(C_PLAYER);
+            msg.append(ps.get(1).getName());
+        } else {
+            msg.append("There are ");
+            msg.append(C_NUMBER);
+            msg.append(numPlayers);
+            msg.append(C_PLAIN);
+            msg.append(" contenders; only 1 will win. First up: ");
+            msg.append(C_PLAYER);
+            msg.append(players.getCurrentPlayer().getName());
+        }
+        broadcast(msg.toString());
     }
 
     /* Send a message to all players.

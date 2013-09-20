@@ -19,6 +19,7 @@
 package net.glouser.jumpgameplugin;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -56,6 +57,11 @@ public class TurnTracker {
         SUCCESS_NEW_STATE,
         FAILED_NOT_FOUND
     }
+
+    public static EnumSet<RemoveResult> RM_SUCCESS = EnumSet.of(
+        RemoveResult.SUCCESS,
+        RemoveResult.SUCCESS_NEW_CURRENT_PLAYER,
+        RemoveResult.SUCCESS_NEW_STATE);
 
     private Plugin plugin;
     private Random rand;
@@ -122,6 +128,16 @@ public class TurnTracker {
         return nextPlayers;
     }
 
+    public int numActivePlayers() {
+        switch (mode) {
+            case CONTINUOUS:
+                return nextPlayers.size() + 1;
+            case ROUNDS:
+                return nextPlayers.size() + prevPlayers.size() + 1;
+        }
+        return 0;
+    }
+
     public AddResult addPlayer(Player p) {
         if (state != State.STOPPED) {
             return AddResult.FAILED_IN_PROGRESS;
@@ -139,7 +155,9 @@ public class TurnTracker {
         allPlayers.remove(p);
 
         RemoveResult result = RemoveResult.SUCCESS;
-        if (p == currentPlayer) {
+        if (state == State.STOPPED) {
+            // Do nothing
+        } else if (p == currentPlayer) {
             switch (mode) {
                 case CONTINUOUS:
                     continuousNextPlayer();

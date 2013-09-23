@@ -34,11 +34,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class JumpGamePlugin extends JavaPlugin implements Listener {
@@ -61,12 +60,14 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        getLogger().info("Registering event listeners");
-        getServer().getPluginManager().registerEvents(this, this);
         pool = new JumpPool();
         game = new JumpGame(this, pool);
         config = new JumpGameConfig(this);
         loadConfig();
+        getLogger().info("Registering event listeners");
+        PluginManager pm = getServer().getPluginManager();
+        pm.registerEvents(this, this);
+        pm.registerEvents(game, this);
     }
 
     @Override
@@ -194,13 +195,6 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         game.removePlayer(event.getPlayer());
     }
 
-    @EventHandler
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        if (game.gameInProgress()) {
-            game.playerDied(event.getEntity());
-        }
-    }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (game.isCurrentPlayer(event.getPlayer())) {
@@ -212,13 +206,6 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
             if (dist < respawnDist) {
                 event.setRespawnLocation(respawnLocation);
             }
-        }
-    }
-
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        if (game.gameInProgress()) {
-            game.playerMoved(event.getPlayer(), event.getTo());
         }
     }
 

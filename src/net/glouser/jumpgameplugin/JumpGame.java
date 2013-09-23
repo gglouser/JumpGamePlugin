@@ -24,11 +24,15 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scheduler.BukkitRunnable;
 
-public class JumpGame {
+public class JumpGame implements Listener {
 
     public enum StartResult {
         SUCCESS,
@@ -226,8 +230,11 @@ public class JumpGame {
         return StartResult.SUCCESS;
     }
 
-    public void playerDied(Player p) {
-        if (p != players.getCurrentPlayer()) return;
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        if (!gameInProgress()) { return; }
+        Player p = event.getEntity();
+        if (p != players.getCurrentPlayer()) { return; }
         cancelTimeout();
         switch (jumpState) {
 
@@ -241,7 +248,11 @@ public class JumpGame {
         }
     }
 
-    public void playerMoved(Player p, Location movedTo) {
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (!gameInProgress()) { return; }
+        Player p = event.getPlayer();
+        Location movedTo = event.getTo();
         if (p != players.getCurrentPlayer()) return;
         boolean movedToPool = pool.isPoolWater(movedTo.getBlock());
         switch (jumpState) {

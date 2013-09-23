@@ -33,6 +33,7 @@ public class JumpGame {
     public enum StartResult {
         SUCCESS,
         FAILED_IN_PROGRESS,
+        FAILED_STARTING,
         FAILED_NO_JUMP_TP,
         FAILED_NO_POOL,
         FAILED_NO_PLAYERS
@@ -40,6 +41,7 @@ public class JumpGame {
 
     private enum JumpState {
         NO_GAME,
+        STARTING,
         JUMPING,
         EXIT_POOL,
     }
@@ -49,6 +51,9 @@ public class JumpGame {
     private static ChatColor C_NUMBER = ChatColor.RED;
     private static String MSG_PREFIX = C_PLAIN + "["
         + ChatColor.DARK_AQUA + "Jump" + C_PLAIN + "] ";
+
+    private static int DELAY_SECONDS = 7;
+    private static int TICKS_PER_SECOND = 20; // approximate
 
     private Plugin plugin;
     private JumpPool pool;
@@ -79,7 +84,8 @@ public class JumpGame {
     }
 
     public boolean gameInProgress() {
-        return jumpState != JumpState.NO_GAME;
+        return jumpState != JumpState.NO_GAME
+            && jumpState != JumpState.STARTING;
     }
 
     public boolean isPlaying(Player p) {
@@ -132,7 +138,7 @@ public class JumpGame {
 
         TurnTracker.RemoveResult res = players.removePlayer(p);
         if (TurnTracker.RM_SUCCESS.contains(res)) {
-            plugin.getLogger().info("Removed " + p.getName());
+            plugin.getLogger().info("Removed " + p.getName() + " - " + res);
             broadcast("Removed " + C_PLAYER + p.getName() + C_PLAIN + " from the jump game");
             p.sendMessage(MSG_PREFIX + "You were removed from the jump game");
         }
@@ -170,14 +176,33 @@ public class JumpGame {
     }
 
     public StartResult start() {
-        if (gameInProgress()) {
+        if (jumpState == JumpState.STARTING) {
+            return StartResult.FAILED_STARTING;
+        } else if (jumpState != JumpState.NO_GAME) {
             return StartResult.FAILED_IN_PROGRESS;
-        } else if (jumpTP == null) {
-            return StartResult.FAILED_NO_JUMP_TP;
-        } else if (pool.size() == 0) {
-            return StartResult.FAILED_NO_POOL;
-        } else if (players.getPlayers().size() == 0) {
-            return StartResult.FAILED_NO_PLAYERS;
+        }
+        StartResult result = startCheck();
+        if (result != StartResult.SUCCESS) {
+            return result;
+        }
+        jumpState = JumpState.STARTING;
+        setStartGameTimeout();
+        announce("The jump game starts in " + (DELAY_SECONDS + 3) + " seconds");
+        return StartResult.SUCCESS;
+    }
+
+    private void startForReal() {
+        if (jumpState != JumpState.STARTING) {
+            plugin.getLogger().info("Game start failed. Unexpected state: " + jumpState);
+            broadcast("Jump game unable to start");
+            return;
+        }
+        StartResult result = startCheck();
+        if (result != StartResult.SUCCESS) {
+            plugin.getLogger().info("Game start failed: " + result);
+            broadcast("Jump game unable to start");
+            jumpState = JumpState.NO_GAME;
+            return;
         }
         plugin.getLogger().info("Starting game");
         jumpCount = 0;
@@ -188,6 +213,16 @@ public class JumpGame {
         startMsg();
         nextJumper();
         moveAllWaiters();
+    }
+
+    private StartResult startCheck() {
+        if (jumpTP == null) {
+            return StartResult.FAILED_NO_JUMP_TP;
+        } else if (pool.size() == 0) {
+            return StartResult.FAILED_NO_POOL;
+        } else if (players.getPlayers().size() == 0) {
+            return StartResult.FAILED_NO_PLAYERS;
+        }
         return StartResult.SUCCESS;
     }
 
@@ -449,6 +484,22 @@ public class JumpGame {
         timeoutTask = br.runTaskLater(plugin, exitPoolTimeoutTicks);
     }
 
+    private void setStartGameTimeout() {
+        BukkitRunnable br = new BukkitRunnable() {
+            private int step = 0;
+            public void run() {
+                if (step < 3) {
+                    broadcast("Game starts in " + (3 - step) + "...");
+                    step += 1;
+                } else {
+                    cancelTimeout();
+                    startForReal();
+                }
+            }
+        };
+        timeoutTask = br.runTaskTimer(plugin, DELAY_SECONDS * TICKS_PER_SECOND, TICKS_PER_SECOND);
+    }
+
     private void cancelTimeout() {
         if (timeoutTask != null) {
             timeoutTask.cancel();
@@ -482,13 +533,19 @@ public class JumpGame {
         broadcast(msg.toString());
     }
 
-    /* Send a message to all players.
+    /* Send a message to all jump game players.
      */
     private void broadcast(String msg) {
         List<Player> ps = players.getPlayers();
         for (Player p : ps) {
             p.sendMessage(MSG_PREFIX + msg);
         }
+    }
+
+    /* Send a message to all players on the server.
+     */
+    private void announce(String msg) {
+        plugin.getServer().broadcastMessage(MSG_PREFIX + msg);
     }
 
 }

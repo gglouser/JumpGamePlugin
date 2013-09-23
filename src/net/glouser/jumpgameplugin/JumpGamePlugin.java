@@ -353,6 +353,10 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("Game already in progress");
                 break;
 
+            case FAILED_STARTING:
+                sender.sendMessage("The jump game will start soon");
+                break;
+
             case FAILED_NO_JUMP_TP:
                 sender.sendMessage("Can't start game: jump platform not set");
                 break;

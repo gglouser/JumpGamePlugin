@@ -407,6 +407,7 @@ public final class JumpGamePlugin extends JavaPlugin implements Listener {
         game.setJumpTimeoutTicks(config.getJumpTimeout());
         game.setJumpHardTimeoutTicks(config.getJumpHardTimeout());
         game.setExitPoolTimeoutTicks(config.getExitPoolTimeout());
+        game.setStartDelay(config.getStartDelay());
         game.setJumpTP(config.getJumpLocation());
         game.setWaitTP(config.getWaitLocation());
         pool.setBlocks(config.getPool());

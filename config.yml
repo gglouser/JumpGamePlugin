@@ -1,5 +1,6 @@
 jumpTimeout: 600
 jumpHardTimeout: 600
 exitPoolTimeout: 200
+startDelay: 7
 poolSizeLimit: 1000
 respawnDist: 32

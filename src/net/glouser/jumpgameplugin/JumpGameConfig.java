@@ -37,6 +37,7 @@ public class JumpGameConfig {
     private static String KEY_JUMP_TIMEOUT = "jumpTimeout";
     private static String KEY_JUMP_HARD_TIMEOUT = "jumpHardTimeout";
     private static String KEY_EXIT_POOL_TIMEOUT = "exitPoolTimeout";
+    private static String KEY_START_DELAY = "startDelay";
     private static String KEY_POOL_SIZE_LIMIT = "poolSizeLimit";
     private static String KEY_RESPAWN_DIST = "respawnDist";
     private static String KEY_RESPAWN_LOCATION = "respawnLocation";
@@ -54,6 +55,7 @@ public class JumpGameConfig {
     private static int DEFAULT_JUMP_TIMEOUT = 600;
     private static int DEFAULT_JUMP_HARD_TIMEOUT = 600;
     private static int DEFAULT_EXIT_POOL_TIMEOUT = 200;
+    private static int DEFAULT_START_DELAY = 7;
     private static int DEFAULT_RESPAWN_DIST = 32;
     private static int DEFAULT_POOL_SIZE_LIMIT = 1000;
 
@@ -78,6 +80,10 @@ public class JumpGameConfig {
 
     public int getExitPoolTimeout() {
         return getConfig().getInt(KEY_EXIT_POOL_TIMEOUT, DEFAULT_EXIT_POOL_TIMEOUT);
+    }
+
+    public int getStartDelay() {
+        return getConfig().getInt(KEY_START_DELAY, DEFAULT_START_DELAY);
     }
 
     public int getPoolSizeLimit() {

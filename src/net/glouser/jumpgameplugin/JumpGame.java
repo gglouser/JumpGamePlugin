@@ -56,7 +56,6 @@ public class JumpGame implements Listener {
     private static String MSG_PREFIX = C_PLAIN + "["
         + ChatColor.DARK_AQUA + "Jump" + C_PLAIN + "] ";
 
-    private static int DELAY_SECONDS = 7;
     private static int TICKS_PER_SECOND = 20; // approximate
 
     private Plugin plugin;
@@ -73,6 +72,7 @@ public class JumpGame implements Listener {
     private int jumpTimeoutTicks;
     private int jumpHardTimeoutTicks;
     private int exitPoolTimeoutTicks;
+    private int startDelaySecs;
     private BukkitTask timeoutTask;
 
     public JumpGame(Plugin plugin, JumpPool pool) {
@@ -118,6 +118,10 @@ public class JumpGame implements Listener {
 
     public void setExitPoolTimeoutTicks(int ticks) {
         exitPoolTimeoutTicks = ticks;
+    }
+
+    public void setStartDelay(int seconds) {
+        startDelaySecs = seconds;
     }
 
     public TurnTracker.AddResult addPlayer(Player p) {
@@ -191,7 +195,7 @@ public class JumpGame implements Listener {
         }
         jumpState = JumpState.STARTING;
         setStartGameTimeout();
-        announce("The jump game starts in " + (DELAY_SECONDS + 3) + " seconds");
+        announce("The jump game starts in " + (startDelaySecs + 3) + " seconds");
         return StartResult.SUCCESS;
     }
 
@@ -512,7 +516,7 @@ public class JumpGame implements Listener {
                 }
             }
         };
-        timeoutTask = br.runTaskTimer(plugin, DELAY_SECONDS * TICKS_PER_SECOND, TICKS_PER_SECOND);
+        timeoutTask = br.runTaskTimer(plugin, startDelaySecs * TICKS_PER_SECOND, TICKS_PER_SECOND);
     }
 
     private void cancelTimeout() {

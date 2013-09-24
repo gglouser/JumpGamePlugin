@@ -1,7 +1,7 @@
 Jump Game Plugin
 ================
 
-Version 0.2.1 for Bukkit 1.6.2-R1.0
+Version 0.3 for Bukkit 1.6.2-R1.0
 
 This plugin runs a simple mini-game. Players jump from a high platform 
 into a shallow pool. After every jump, one block in the pool is replaced 
@@ -86,6 +86,11 @@ pool after a successful jump. When time runs out, the jumper is
 teleported out (to the waiting area if one is set) and the next player's 
 turn begins.
 
+- startDelay: time in seconds from when the start button is pushed until 
+the final three-second countdown to game start. For example, if 
+startDelay is 7, the game will start 10 seconds after the start button 
+is pushed (7 second delay plus 3 second countdown).
+
 - poolSizeLimit: maximum size of the landing pool
 
 - respawnDist: any player who dies within this distance from the 
@@ -126,6 +131,13 @@ given, remove self.
 
 Change log
 ----------
+
+0.3:
+- Added delay between pushing start button and actual game start.
+  Players can still join the game during the delay.
+- Added more info to game messages, like number of players remaining
+  and eliminations.
+- Made game messages prettier.
 
 0.2.1:
 - Fixed problem with timeouts on players who disconnect.

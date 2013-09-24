@@ -128,6 +128,10 @@ public class TurnTracker {
         return nextPlayers;
     }
 
+    public List<Player> getProvisionalOut() {
+        return provisionalOut;
+    }
+
     public int numActivePlayers() {
         switch (mode) {
             case CONTINUOUS:

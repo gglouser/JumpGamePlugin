@@ -267,6 +267,7 @@ public class JumpGame implements Listener {
                     } else {
                         broadcast("Splashdown! Good jump by "
                             + C_PLAYER + p.getName());
+                        eliminationMsg();
                         p.sendMessage(MSG_PREFIX + "Please exit the pool.");
                         cancelTimeout();
                         setExitPoolTimeout();
@@ -307,7 +308,12 @@ public class JumpGame implements Listener {
     }
 
     private void endTurnFailure() {
+        Player deadPlayer = players.getCurrentPlayer();
         players.endTurnFailure();
+        if (players.getState() == TurnTracker.State.READY) {
+            broadcast(C_PLAYER + deadPlayer.getName()
+                + C_PLAIN + " will be eliminated if another player survives their jump");
+        }
         update();
     }
 
@@ -320,9 +326,7 @@ public class JumpGame implements Listener {
                 break;
 
             case READY:
-                broadcast("" + C_NUMBER + players.numActivePlayers()
-                    + C_PLAIN + " contenders remain. Now jumping: "
-                    + C_PLAYER + players.getCurrentPlayer().getName());
+                readyMsg();
                 nextJumper();
                 break;
 
@@ -542,6 +546,44 @@ public class JumpGame implements Listener {
             msg.append(players.getCurrentPlayer().getName());
         }
         broadcast(msg.toString());
+    }
+
+    private void readyMsg() {
+        StringBuilder msg = new StringBuilder();
+        msg.append(C_NUMBER);
+        msg.append(players.numActivePlayers());
+        msg.append(C_PLAIN);
+        msg.append(" contenders remain");
+
+        List<Player> out = players.getProvisionalOut();
+        if (out.size() > 0) {
+            msg.append("; ");
+            msg.append(C_NUMBER);
+            msg.append(out.size());
+            msg.append(C_PLAIN);
+            msg.append(" could come back");
+        }
+
+        msg.append(". Now jumping: ");
+        msg.append(C_PLAYER);
+        msg.append(players.getCurrentPlayer().getName());
+        broadcast(msg.toString());
+    }
+
+    private void eliminationMsg() {
+        List<Player> out = players.getProvisionalOut();
+        if (out.size() == 1) {
+            broadcast(C_PLAYER + out.get(0).getName()
+                + C_PLAIN + " was eliminated");
+        } else if (out.size() == 2) {
+            broadcast(C_PLAYER + out.get(0).getName()
+                + C_PLAIN + " and "
+                + C_PLAYER + out.get(1).getName()
+                + C_PLAIN + " were eliminated");
+        } else if (out.size() > 2) {
+            broadcast(C_NUMBER.toString() + out.size()
+                + C_PLAIN + " players were eliminated");
+        }
     }
 
     /* Send a message to all jump game players.
